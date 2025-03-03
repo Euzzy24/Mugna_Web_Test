@@ -1,0 +1,26 @@
+ // async isPlaying() {
+  //   const videoElement = await this.videoPreview.elementHandle();
+  //   return videoElement.getProperty("paused").then((p) => !p);
+  // }
+
+  // async verifyVideoIsPlayable() {
+  //   // Verify video element is visible
+  //   await expect(this.videoPreview).toBeVisible();
+  //   await expect(this.playButton).toBeVisible();
+  //   await this.playButton.scrollIntoViewIfNeeded();
+
+  //   // Verify element is in viewport
+  //   await expect(this.playButton).toBeInViewport();
+  //   await this.playButton.click();
+
+  //   // await this.videoPreview.click();
+  //   await this.page.waitForSelector('videoPreview[playing="true"]');
+
+  //   // expect(await this.videoPreview.isPlaying()).toBeTruthy();
+
+  //   // // Verify video time increases
+  //   // const initialTime = await this.videoPreview.currentTime;
+  //   // await this.page.waitForTimeout(1000); // Wait for playback to start
+  //   // const newTime = await this.videoPreview.currentTime;
+  //   // expect(newTime).toBeGreaterThan(initialTime);
+  // }
