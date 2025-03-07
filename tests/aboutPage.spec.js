@@ -34,5 +34,5 @@ test("Verify animation on envision section", async () => {
 });
 
 test("Verify Hover on Mugna Minnies", async () => {
-  await aboutPage.hoverMugnaMinnies();
+  await aboutPage.hoverOverGroupDiv();
 });

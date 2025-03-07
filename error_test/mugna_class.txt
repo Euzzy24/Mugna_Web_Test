@@ -139,7 +139,7 @@ export class AboutPage {
 
       // If images are visible, assert and stop scrolling
       if (totalCount > 24) {
-        await expect(visibleImages.first()).toBeVisible(); // Explicit assertion
+        await expect(visibleImages.first()).toBeVisible(); // ✅ Explicit assertion
         console.log(` Images became visible after ${attempts + 1} scroll(s)`);
         return;
       }
@@ -192,11 +192,11 @@ export class AboutPage {
 
       console.log(`Image ${i + 1} final styles:`, finalStyles);
 
-      // Ensure animation happened
+      // ✅ Ensure animation happened
       expect(finalStyles.opacity).not.toBe(initialStylesList[i].opacity);
       // expect(finalStyles.scale).not.toBe(initialStylesList[i].scale);
 
-      // Ensure transition is applied (not empty or "none")
+      // ✅ Ensure transition is applied (not empty or "none")
       expect(finalStyles.transition).not.toBe("");
       expect(finalStyles.transition).not.toBe("none");
     }
