@@ -5,6 +5,7 @@ export class AboutPage {
     this.page = page;
     this.aboutLink = page.getByRole("link", { name: "About", exact: true });
     this.readBlog = page.getByRole("link", { name: "Read Our Blog" });
+    this.blogId = page.locator("#articles");
     this.watchVideoButton = page.locator("#watch-video-btn");
     this.videoPreview = page.locator("video");
     this.exitButton = page.locator(".svg-inline--fa");
@@ -14,7 +15,7 @@ export class AboutPage {
     this.playStatus = this.playControl.locator(".vjs-control-text");
 
     this.teamImagesHidden = page.locator(
-      ".emp_illustration:not(.emp_illustration_show)"
+      ".emp_illustration:not(.emp_illustration_show) img"
     );
     this.teamImagesVisible = page.locator(".emp_illustration_show");
 
@@ -33,7 +34,7 @@ export class AboutPage {
   }
 
   async navigate() {
-    await this.page.goto("https://staging.mugna.tech/");
+    await this.page.goto("https://mugna.tech/");
   }
 
   async goToAboutPage() {
@@ -42,8 +43,9 @@ export class AboutPage {
 
   async readOurBlog() {
     await this.readBlog.click();
-    await this.page.waitForURL("https://staging.mugna.tech/blog"); // Waits for navigation
+    await this.page.waitForURL("https://mugna.tech/blog"); // Waits for navigation
     expect(this.page.url()).toContain("/blog"); // Assertion to verify correct navigation
+    await expect(this.blogId).toBeVisible();
     console.log("Successfully navigated to blog page");
   }
 
@@ -92,7 +94,7 @@ export class AboutPage {
     if (isPlaying) {
       console.log(" Video is playing. Clicking pause...");
       await this.playControl.click();
-      await expect(this.playStatus).toHaveText(/pause/i);
+      await expect(this.playStatus).not.toHaveText(/pause/i);
       console.log(" Video is now paused.");
     } else {
       console.log(" Video is paused. Clicking play...");
@@ -108,48 +110,102 @@ export class AboutPage {
   }
 
   async teamScroll() {
-    // Locate elements that are initially hidden
-    await expect(this.teamImagesHidden).toHaveCount(25);
-    console.log(`Hidden Images reach 25`);
+    // Ensure Page is Fully Loaded
+    await this.page.waitForTimeout(2000);
 
-    let hiddenCount = await this.teamImagesHidden.count();
-    console.log(`Hidden image: ${hiddenCount}`);
+    //  Locate Initially Hidden Images (Before Scroll)
+    // this.teamImagesHidden = this.page.locator(
+    //   ".emp_illustration:not(.emp_illustration_show) img"
+    // );
+    // await this.page.waitForSelector(
+    //   ".emp_illustration:not(.emp_illustration_show) img",
+    //   { timeout: 5000 }
+    // );
+    await this.teamImagesHidden.first().waitFor({ timeout: 5000 });
 
+    let hiddenImages = await this.teamImagesHidden.all();
+
+    if (hiddenImages.length === 0) {
+      console.error("❌ No hidden images found! Checking with JS...");
+      let jsHiddenImages = await this.page.evaluate(() =>
+        Array.from(
+          document.querySelectorAll(
+            ".emp_illustration:not(.emp_illustration_show) img"
+          )
+        ).map((img) => img.getAttribute("alt"))
+      );
+      console.log("🔎 JS-detected hidden images:", jsHiddenImages);
+      throw new Error("❌ No hidden images found before scrolling!");
+    }
+
+    let hiddenAlts = new Set();
+    for (const image of hiddenImages) {
+      let altText = await image.getAttribute("alt");
+      if (altText) hiddenAlts.add(altText);
+
+      // Assertion: Ensure Image Does NOT Have `.emp_illustration_show` Class
+      let hasShowClass = await image.evaluate((img) =>
+        img
+          .closest(".emp_illustration")
+          ?.classList.contains("emp_illustration_show")
+      );
+      expect(hasShowClass).toBeFalsy();
+    }
+
+    console.log(
+      "Initially Hidden Image ALT Attributes:",
+      Array.from(hiddenAlts)
+    );
+
+    // Scroll & Verify Visibility
     let attempts = 0;
-    const maxAttempts = 7; // Prevent infinite loops
-    let totalCount = 0;
+    const maxAttempts = 7;
+    let visibleAlts = new Set();
 
     while (attempts < maxAttempts) {
-      // Scroll down
-      await this.page.evaluate(() =>
-        window.scrollBy(0, window.innerHeight * 1)
-      );
-      await this.page.waitForTimeout(1000); // Wait for animations/loading
+      await this.page.evaluate(() => window.scrollBy(0, window.innerHeight));
+      await this.page.waitForTimeout(600);
 
-      // Re-locate images after scroll
-      let visibleImages = this.page.locator(".emp_illustration_show");
-      let visibleCount = await visibleImages.count();
+      // Ensure new images load
+      await this.page.waitForSelector(".emp_illustration_show img", {
+        visible: true,
+      });
 
-      totalCount += visibleCount;
+      let visibleImages = await this.page
+        .locator(".emp_illustration_show img")
+        .all();
+      let currentScrollAlts = [];
 
-      // Log how many images became visible in this iteration
-      console.log(
-        `Scroll attempt ${attempts + 1}: ${visibleCount} image(s) visible`
-      );
-
-      // If images are visible, assert and stop scrolling
-      if (totalCount > 24) {
-        await expect(visibleImages.first()).toBeVisible(); // Explicit assertion
-        console.log(` Images became visible after ${attempts + 1} scroll(s)`);
-        return;
+      for (const image of visibleImages) {
+        let altText = await image.getAttribute("alt");
+        if (altText) {
+          visibleAlts.add(altText);
+          currentScrollAlts.push(altText); // Collect for this scroll
+        }
       }
+
+      // 🔹 **LOG EVERY VISIBLE IMAGE ALT AFTER SCROLL**
+      console.log(
+        `Scroll ${attempts + 1}: Found ${
+          visibleAlts.size
+        } unique visible images`
+      );
+      console.log("👀 Visible Images (Current Scroll):", currentScrollAlts);
+
+      // Assertion: Ensure all hidden images are now visible
+      if ([...hiddenAlts].every((alt) => visibleAlts.has(alt))) {
+        console.log(
+          `  All hidden images are now visible after ${attempts + 1} scroll(s)`
+        );
+        break;
+      }
+
       attempts++;
     }
 
-    // If max attempts reached and no images appeared, fail the test
-    throw new Error(
-      `Images did not become visible after ${maxAttempts} scrolls`
-    );
+    // Final Assertion: Ensure All Initially Hidden Images Are Now Visible
+    expect([...hiddenAlts].every((alt) => visibleAlts.has(alt))).toBeTruthy();
+    console.log(" Final Visible Image List:", Array.from(visibleAlts));
   }
 
   async envisionAnimation() {
@@ -194,9 +250,6 @@ export class AboutPage {
 
       // Ensure animation happened
       expect(finalStyles.opacity).not.toBe(initialStylesList[i].opacity);
-      // expect(finalStyles.scale).not.toBe(initialStylesList[i].scale);
-
-      // Ensure transition is applied (not empty or "none")
       expect(finalStyles.transition).not.toBe("");
       expect(finalStyles.transition).not.toBe("none");
     }
