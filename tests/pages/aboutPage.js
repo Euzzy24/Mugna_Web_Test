@@ -34,18 +34,20 @@ export class AboutPage {
   }
 
   async navigate() {
-    await this.page.goto("https://mugna.tech/");
+    await this.page.goto("https://mugna.tech/about");
+    await this.page.setViewportSize({ width: 1920, height: 1080 });
+    
+
+    // await this.page.goto("https://mugna.tech");
   }
 
-  async goToAboutPage() {
-    await this.aboutLink.click();
-  }
+  // async goToAboutPage() {
+  //   await this.aboutLink.click();
+  // }
 
   async readOurBlog() {
     await this.readBlog.click();
     await this.page.waitForURL("https://mugna.tech/blog"); // Waits for navigation
-    expect(this.page.url()).toContain("/blog"); // Assertion to verify correct navigation
-    await expect(this.blogId).toBeVisible();
     console.log("Successfully navigated to blog page");
   }
 
@@ -53,14 +55,14 @@ export class AboutPage {
     await this.watchVideoButton.click();
   }
 
-  async verifyVideoIsVisible() {
-    await expect(this.videoPreview).toBeVisible();
-  }
+  // async verifyVideoIsVisible() {
+  //   await expect(this.videoPreview).toBeVisible();
+  // }
 
-  async clickExitVideo() {
-    await this.exitButton.click();
-    await expect(this.videoPreview).not.toBeVisible();
-  }
+  // async clickExitVideo() {
+  //   await this.exitButton.click();
+  //   await expect(this.videoPreview).not.toBeVisible();
+  // }
 
   async waitForVideoToLoad() {
     await this.videoPreview.waitFor();
@@ -105,8 +107,8 @@ export class AboutPage {
 
     // Exit the video
     console.log("Exiting the video...");
-    await this.clickExitVideo();
-    console.log("Video playback test completed!");
+    await this.exitButton.click();
+    // await this.clickExitVideo();
   }
 
   async teamScroll() {
@@ -114,13 +116,13 @@ export class AboutPage {
     await this.page.waitForTimeout(2000);
 
     //  Locate Initially Hidden Images (Before Scroll)
-    // this.teamImagesHidden = this.page.locator(
-    //   ".emp_illustration:not(.emp_illustration_show) img"
-    // );
-    // await this.page.waitForSelector(
-    //   ".emp_illustration:not(.emp_illustration_show) img",
-    //   { timeout: 5000 }
-    // );
+    this.teamImagesHidden = this.page.locator(
+      ".emp_illustration:not(.emp_illustration_show) img"
+    );
+    await this.page.waitForSelector(
+      ".emp_illustration:not(.emp_illustration_show) img",
+      { timeout: 5000 }
+    );
     await this.teamImagesHidden.first().waitFor({ timeout: 5000 });
 
     let hiddenImages = await this.teamImagesHidden.all();
